@@ -36,4 +36,18 @@ const userAuth = (req, res, next) => {
   });
 };
 
-module.exports = { userAuth, verifyToken };
+
+const AdminAuth = (req,res,next) => {
+verifyToken(req,res, () => {
+
+    if(req.user.isAdmin){
+        next();
+    }else{
+        res.status(403).json("You are Not Admin");
+    }
+
+});
+
+}
+
+module.exports = { userAuth, verifyToken ,AdminAuth};
