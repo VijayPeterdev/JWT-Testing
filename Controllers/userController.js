@@ -3,6 +3,10 @@ const CryptoJS = require("crypto-js");
 
 const jwt = require('jsonwebtoken');
 
+const RefreshTokenDB = require("../Models/RefreshToken");
+
+
+
 //signin user
 const signin = async (req, res) => {
   try {
@@ -17,13 +21,40 @@ const signin = async (req, res) => {
 
     if (req.body.password === OriginalPassword) {
 
-//accessToken Process
-    const accessToken =  jwt.sign({id:userData._id,isAdmin:userData.isAdmin},process.env.JWT_KEY,{expiresIn:"1d"});
+//accessToken Process // Access token Generate pannura place
+    const accessToken =  jwt.sign({id:userData._id,isAdmin:userData.isAdmin},process.env.JWT_KEY,{expiresIn:"30s"});
+    
+    // refresh Token
+    const refreshToken =  jwt.sign({id:userData._id,isAdmin:userData.isAdmin},process.env.JWT_Refresh_Token_Key);
 
-  const {password,...other} = userData._doc;
+   
+
+     const StoreAccessToken = await RefreshTokenDB({
+      refreshToken : refreshToken,
+
+     })
 
 
-      res.status(200).json({...other,accessToken});
+     try{
+
+       await StoreAccessToken.save();
+
+     }catch(err){
+
+      res.status(500).json(err);
+     }
+  
+
+
+      const {password,...other} = userData._doc;
+
+      res.status(200).json({...other,accessToken,refreshToken});
+
+     
+
+
+
+
     } else {
       res.status(401).json("Password is wrong");
     }
@@ -112,9 +143,37 @@ const deleteuser = async (req,res) =>{
 
 
 
+// logout  refresh token delete pannurom security perpose
+
+const logout = async(req,res) => {
+
+  try{
+
+    const refreshToken = req.body.refreshToken;
+
+    // delete the token 
+     await RefreshTokenDB.findOneAndDelete({refreshToken:refreshToken})
+    res.status(200).json("You logout Successfully");
+
+
+
+
+  }catch(err){
+    res.status(403).json({
+      message : "Error",
+      err
+    })
+
+  }
+
+
+
+}
+
 module.exports = {
   signin,
   signup,
   updateuser,
-  deleteuser
+  deleteuser,
+  logout
 };
